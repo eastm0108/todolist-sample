@@ -6,7 +6,7 @@ function errorHandle(res) {
         'Content-Type': 'application/json',
     };
 
-    res.writeHead(400, header);
+    res.writeHead(400, headers);
     res.write(
         JSON.stringify({
             status: 'false',
