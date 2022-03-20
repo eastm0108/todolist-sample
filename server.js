@@ -77,7 +77,6 @@ const requestListener = (req, res) => {
                 JSON.stringify({
                     status: 'success',
                     data: todos,
-                    id: 1,
                 })
             );
             res.end();
