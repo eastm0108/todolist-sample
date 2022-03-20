@@ -20,7 +20,7 @@ const requestListener = (req, res) => {
     });
 
     if (url === '/todos' && method === 'GET') {
-        res.writeHead(200, header);
+        res.writeHead(200, headers);
         res.write(
             JSON.stringify({
                 status: 'success',
@@ -41,7 +41,7 @@ const requestListener = (req, res) => {
                     };
                     todos.push(todo);
 
-                    res.writeHead(200, header);
+                    res.writeHead(200, headers);
                     res.write(
                         JSON.stringify({
                             status: 'success',
@@ -56,7 +56,7 @@ const requestListener = (req, res) => {
         });
     } else if (url === '/todos' && method === 'DELETE') {
         todos.length = 0;
-        res.writeHead(200, header);
+        res.writeHead(200, headers);
         res.write(
             JSON.stringify({
                 status: 'success',
@@ -72,7 +72,7 @@ const requestListener = (req, res) => {
             errorHandle(res);
         } else {
             todos.splice(index, 1);
-            res.writeHead(200, header);
+            res.writeHead(200, headers);
             res.write(
                 JSON.stringify({
                     status: 'success',
@@ -94,7 +94,7 @@ const requestListener = (req, res) => {
                 } else {
                     todos[index].title = title;
 
-                    res.writeHead(200, header);
+                    res.writeHead(200, headers);
                     res.write(
                         JSON.stringify({
                             status: 'success',
@@ -108,10 +108,10 @@ const requestListener = (req, res) => {
             }
         });
     } else if (method === 'OPTIONS') {
-        res.writeHead(200, header);
+        res.writeHead(200, headers);
         res.end();
     } else {
-        res.writeHead(404, header);
+        res.writeHead(404, headers);
         res.write(
             JSON.stringify({
                 status: 'false',
