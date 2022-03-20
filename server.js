@@ -88,7 +88,7 @@ const requestListener = (req, res) => {
                 const id = url.split('/').pop();
                 const index = todos.findIndex((element) => element.id === id);
 
-                if (index === -1 && title === undefined) {
+                if (index === -1 || title === undefined) {
                     errorHandle(res);
                 } else {
                     todos[index].title = title;
