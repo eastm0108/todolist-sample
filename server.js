@@ -1,16 +1,12 @@
 const http = require('http');
 const { v4: uuidv4 } = require('uuid');
-const errorHandle = require('./errorHandle');
+const { errorHandle, successHandle } = require('./responseHandle');
+const { HEADERS, REQUEST_METHOD, HTTP_STATUS, ERROR_MESSAGE, FIND_INDEX_RESULT } = require('./constants');
+const { DEFAULT_PORT } = require('./config');
 
 const todos = [];
 
 const requestListener = (req, res) => {
-    const headers = {
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Content-Length, X-Requested-With',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'PATCH, POST, GET,OPTIONS,DELETE',
-        'Content-Type': 'application/json',
-    };
     const url = req.url;
     const method = req.method;
     let body = '';
@@ -19,107 +15,60 @@ const requestListener = (req, res) => {
         body += chunk;
     });
 
-    if (url === '/todos' && method === 'GET') {
-        res.writeHead(200, headers);
-        res.write(
-            JSON.stringify({
-                status: 'success',
-                data: todos,
-            })
-        );
-        res.end();
-    } else if (url === '/todos' && method === 'POST') {
+    if (url === '/todos' && method === REQUEST_METHOD.GET) {
+        successHandle(res, todos);
+    } else if (url === '/todos' && method === REQUEST_METHOD.POST) {
         req.on('end', () => {
             try {
                 const title = JSON.parse(body).title;
-                if (title === undefined) {
-                    errorHandle(res);
-                } else {
-                    const todo = {
-                        title,
-                        id: uuidv4(),
-                    };
-                    todos.push(todo);
 
-                    res.writeHead(200, headers);
-                    res.write(
-                        JSON.stringify({
-                            status: 'success',
-                            data: todos,
-                        })
-                    );
-                    res.end();
+                if (title) {
+                    todos.push({ title, id: uuidv4() });
+                    successHandle(res, todos);
+                } else {
+                    errorHandle(res, HTTP_STATUS.BAD_REQUEST, ERROR_MESSAGE.DATA_ERROR);
                 }
             } catch (error) {
-                errorHandle(res);
+                errorHandle(res, HTTP_STATUS.BAD_REQUEST, ERROR_MESSAGE.CREATE_ERROR);
             }
         });
-    } else if (url === '/todos' && method === 'DELETE') {
+    } else if (url === '/todos' && method === REQUEST_METHOD.DELETE) {
         todos.length = 0;
-        res.writeHead(200, headers);
-        res.write(
-            JSON.stringify({
-                status: 'success',
-                message: '刪除成功',
-            })
-        );
-        res.end();
-    } else if (url.startsWith('/todos/') && method === 'DELETE') {
-        const id = url.split('/').pop();
+        successHandle(res, todos);
+    } else if (url.startsWith('/todos/') && method === REQUEST_METHOD.DELETE) {
+        const id = url?.split('/')?.pop();
         const index = todos.findIndex((element) => element.id === id);
 
-        if (index === -1) {
-            errorHandle(res);
+        if (index === FIND_INDEX_RESULT.NOT_FOUND) {
+            errorHandle(res, HTTP_STATUS.BAD_REQUEST, ERROR_MESSAGE.NOT_FOUND_ID);
         } else {
             todos.splice(index, 1);
-            res.writeHead(200, headers);
-            res.write(
-                JSON.stringify({
-                    status: 'success',
-                    data: todos,
-                })
-            );
-            res.end();
+            successHandle(res, todos);
         }
-    } else if (url.startsWith('/todos/') && method === 'PATCH') {
+    } else if (url.startsWith('/todos/') && method === REQUEST_METHOD.PATCH) {
         req.on('end', () => {
             try {
                 const title = JSON.parse(body).title;
-                const id = url.split('/').pop();
+                const id = url?.split('/')?.pop();
                 const index = todos.findIndex((element) => element.id === id);
 
-                if (index === -1 || title === undefined) {
-                    errorHandle(res);
+                if (index === FIND_INDEX_RESULT.NOT_FOUND || title === undefined) {
+                    errorHandle(res, HTTP_STATUS.BAD_REQUEST, ERROR_MESSAGE.NOT_FOUND_ID_OR_DATA_ERROR);
                 } else {
                     todos[index].title = title;
-
-                    res.writeHead(200, headers);
-                    res.write(
-                        JSON.stringify({
-                            status: 'success',
-                            data: todos[index],
-                        })
-                    );
-                    res.end();
+                    successHandle(res, todos);
                 }
             } catch (error) {
-                errorHandle(res);
+                errorHandle(res, HTTP_STATUS.BAD_REQUEST, ERROR_MESSAGE.UPDATE_ERROR);
             }
         });
-    } else if (method === 'OPTIONS') {
-        res.writeHead(200, headers);
+    } else if (method === REQUEST_METHOD.OPTIONS) {
+        res.writeHead(HTTP_STATUS.SUCCESS, HEADERS);
         res.end();
     } else {
-        res.writeHead(404, headers);
-        res.write(
-            JSON.stringify({
-                status: 'false',
-                message: 'not found',
-            })
-        );
-        res.end();
+        errorHandle(res, HTTP_STATUS.NOT_FOUND, ERROR_MESSAGE.NOT_FOUND_ROUTE);
     }
 };
 
 const server = http.createServer(requestListener);
-server.listen(process.env.PORT || 8080);
+server.listen(process.env.PORT || DEFAULT_PORT);
